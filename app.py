@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from mpesa import initiate_stk_push  # Importing the function from mpesa.py
+from mpesa import send_stk_push  # Correct import based on the function name in mpesa.py
 import os
 import requests
 import logging
@@ -26,7 +26,7 @@ def pay():
     logging.debug(f"Initiating STK Push: Phone={phone_number}, Amount={amount}")
     
     # Trigger STK Push
-    response = initiate_stk_push(phone_number, amount)
+    response = send_stk_push(phone_number, amount)
     logging.debug(f"STK Push Response: {response}")
     
     return jsonify(response)

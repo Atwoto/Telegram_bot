@@ -33,8 +33,9 @@ def get_access_token():
     else:
         print("Error generating access token:", response.json())
         return None
-
-def send_stk_push(amount, phone_number):
+    
+    
+def initiate_stk_push(amount, phone_number):
     token = get_access_token()
     if token is None:
         return {"error": "Failed to generate access token"}
