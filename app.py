@@ -2,8 +2,10 @@ from flask import Flask, request, jsonify
 from mpesa import initiate_stk_push  # Importing the function from mpesa.py
 import os
 import requests
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 # Route to check if the backend is running
 @app.route('/', methods=['GET'])
@@ -20,8 +22,13 @@ def pay():
     if not phone_number or not amount:
         return jsonify({"error": "Phone number and amount are required"}), 400
 
+    # Log the STK push initiation
+    logging.debug(f"Initiating STK Push: Phone={phone_number}, Amount={amount}")
+    
     # Trigger STK Push
     response = initiate_stk_push(phone_number, amount)
+    logging.debug(f"STK Push Response: {response}")
+    
     return jsonify(response)
 
 # Telegram Webhook route
@@ -29,34 +36,32 @@ def pay():
 def webhook():
     data = request.get_json()
     
-    # Ensure you're getting data from Telegram
     if not data:
-        print("No data received from Telegram.")
+        logging.error("No data received from Telegram.")
         return "No data received", 400
     
     if 'message' in data:
         chat_id = data['message']['chat']['id']
         text = data['message'].get('text', '')
         
-        # If the command is /start, initiate the payment flow
         if text == '/start':
             phone_number = "254792185625"  # Replace with a valid phone number for testing
             amount = 10000  # Set the amount you want to charge for testing
             
             # Trigger STK Push
             response = initiate_stk_push(phone_number, amount)
+            logging.debug(f"STK Push Response for /start command: {response}")
             
-            # Send a response back to the user on Telegram
             telegram_response = send_telegram_message(chat_id, "Payment Initiated! Please check your phone to confirm.")
+            logging.debug(f"Telegram Response: {telegram_response}")
             
             return jsonify({"mpesa_response": response, "telegram_response": telegram_response}), 200
     
     return "Webhook received", 200
 
-
 # Function to send a message back to the user on Telegram
 def send_telegram_message(chat_id, message):
-    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+    TELEGRAM_BOT_TOKEN = '7390909460:AAHWLtjexjbJ2iZVweU0vqjJbwYhqxOohis'
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
         'chat_id': chat_id,
