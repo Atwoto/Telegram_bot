@@ -29,13 +29,17 @@ def pay():
 def webhook():
     data = request.get_json()
     
+    # Ensure you're getting data from Telegram
+    if not data:
+        print("No data received from Telegram.")
+        return "No data received", 400
+    
     if 'message' in data:
         chat_id = data['message']['chat']['id']
         text = data['message'].get('text', '')
         
         # If the command is /start, initiate the payment flow
         if text == '/start':
-            # For testing, you can set a fixed phone number and amount
             phone_number = "254792185625"  # Replace with a valid phone number for testing
             amount = 10000  # Set the amount you want to charge for testing
             
@@ -48,6 +52,7 @@ def webhook():
             return jsonify({"mpesa_response": response, "telegram_response": telegram_response}), 200
     
     return "Webhook received", 200
+
 
 # Function to send a message back to the user on Telegram
 def send_telegram_message(chat_id, message):
