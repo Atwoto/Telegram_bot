@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from mpesa import send_stk_push  # Correct import based on the function name in mpesa.py
+from mpesa import initiate_stk_push  # Correct import based on the function name in mpesa.py
 import os
 import requests
 import logging
@@ -26,7 +26,7 @@ def pay():
     logging.debug(f"Initiating STK Push: Phone={phone_number}, Amount={amount}")
     
     # Trigger STK Push
-    response = send_stk_push(phone_number, amount)
+    response = initiate_stk_push(phone_number, amount)
     logging.debug(f"STK Push Response: {response}")
     
     return jsonify(response)
@@ -69,7 +69,6 @@ def webhook():
             return jsonify({"telegram_response": telegram_response}), 200
 
     return "Webhook received", 200
-
 
 # Function to send a message back to the user on Telegram
 def send_telegram_message(chat_id, message):

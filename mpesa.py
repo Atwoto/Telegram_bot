@@ -1,15 +1,15 @@
 import requests
 from requests.auth import HTTPBasicAuth
-import json
 from datetime import datetime, timedelta
+import base64
 
 # Credentials from Safaricom Developer Portal
-CONSUMER_KEY = '8W8PRqJXbb5f9uo80VA61uMlNd4IYCJ11MxxUAuTXh5JweTU'  # Replace with your actual consumer key
-CONSUMER_SECRET = '4zEOTTWSez2XAUnXkbMzslr3XTCczWFHNN89wF7fUxMi2yepwjAV4kBGGz9reAFF'  # Replace with your actual consumer secret
-SHORTCODE = '174379'  # Replace with your shortcode
-PASSWORD = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"  # Replace with your password
-CALLBACK_URL = 'https://hammtonndekebot.herokuapp.com/callback'  # Replace with your callback URL
-BASE_URL = 'https://sandbox.safaricom.co.ke'  # Switch to production URL for live transactions
+CONSUMER_KEY = '8W8PRqJXbb5f9uo80VA61uMlNd4IYCJ11MxxUAuTXh5JweTU'
+CONSUMER_SECRET = '4zEOTTWSez2XAUnXkbMzslr3XTCczWFHNN89wF7fUxMi2yepwjAV4kBGGz9reAFF'
+SHORTCODE = '174379'
+PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
+CALLBACK_URL = 'https://hammtonndekebot.herokuapp.com/callback'
+BASE_URL = 'https://sandbox.safaricom.co.ke'
 
 # Global variable to store access token and its expiration
 access_token = None
@@ -33,9 +33,15 @@ def get_access_token():
     else:
         print("Error generating access token:", response.json())
         return None
-    
-    
-def initiate_stk_push(amount, phone_number):
+
+def generate_password():
+    # Generate a password using the shortcode, passkey, and timestamp
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    data_to_encode = SHORTCODE + PASSKEY + timestamp
+    encoded_string = base64.b64encode(data_to_encode.encode()).decode('utf-8')
+    return encoded_string, timestamp
+
+def initiate_stk_push(phone_number, amount):
     token = get_access_token()
     if token is None:
         return {"error": "Failed to generate access token"}
@@ -45,10 +51,13 @@ def initiate_stk_push(amount, phone_number):
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
+
+    password, timestamp = generate_password()
+
     payload = {
         "BusinessShortCode": SHORTCODE,
-        "Password": PASSWORD,
-        "Timestamp": datetime.now().strftime("%Y%m%d%H%M%S"),  # Generate current timestamp
+        "Password": password,
+        "Timestamp": timestamp,
         "TransactionType": "CustomerPayBillOnline",
         "Amount": amount,
         "PartyA": phone_number,
@@ -58,13 +67,6 @@ def initiate_stk_push(amount, phone_number):
         "AccountReference": "Contribution",
         "TransactionDesc": "Contributing to the cause",
     }
-    
+
     response = requests.post(url, json=payload, headers=headers)
     return response.json()
-
-# Example usage
-if __name__ == "__main__":
-    amount = 100  # Replace with the desired amount
-    phone_number = "254792185625"  # Replace with the actual phone number
-    response = send_stk_push(amount, phone_number)
-    print(response)
