@@ -43,25 +43,35 @@ def webhook():
     if 'message' in data:
         chat_id = data['message']['chat']['id']
         text = data['message'].get('text', '')
-        
+
         if text == '/start':
+            # Ask the user if they are interested in contributing
+            telegram_response = send_telegram_message(chat_id, "Are you interested in contributing? Reply with 'yes' or 'no'.")
+            logging.debug(f"Telegram Response for /start command: {telegram_response}")
+            return "Ask sent", 200
+        
+        elif text.lower() == 'yes':
+            # If the user says yes, initiate STK push
             phone_number = "254792185625"  # Replace with a valid phone number for testing
             amount = 10000  # Set the amount you want to charge for testing
             
-            # Trigger STK Push
             response = initiate_stk_push(phone_number, amount)
-            logging.debug(f"STK Push Response for /start command: {response}")
+            logging.debug(f"STK Push Response for contribution: {response}")
             
             telegram_response = send_telegram_message(chat_id, "Payment Initiated! Please check your phone to confirm.")
             logging.debug(f"Telegram Response: {telegram_response}")
-            
             return jsonify({"mpesa_response": response, "telegram_response": telegram_response}), 200
+        
+        elif text.lower() == 'no':
+            telegram_response = send_telegram_message(chat_id, "Thank you for your response!")
+            logging.debug(f"Telegram Response: {telegram_response}")
+            return jsonify({"telegram_response": telegram_response}), 200
     
     return "Webhook received", 200
 
 # Function to send a message back to the user on Telegram
 def send_telegram_message(chat_id, message):
-    TELEGRAM_BOT_TOKEN = '7390909460:AAHWLtjexjbJ2iZVweU0vqjJbwYhqxOohis'
+    TELEGRAM_BOT_TOKEN = '7390909460:AAHWLtjexjbJ2iZVweU0vqjJbwYhqxOohis'  # Replace with your actual token
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
         'chat_id': chat_id,
