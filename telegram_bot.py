@@ -1,58 +1,48 @@
-import os
-import requests
 from telegram import Update
-from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackContext, Updater
-import logging
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from mpesa import send_stk_push  # Import the STK push function from mpesa.py
 
-# Telegram bot token from BotFather
-TELEGRAM_BOT_TOKEN = '7390909460:AAHWLtjexjbJ2iZVweU0vqjJbwYhqxOohis'
+# To store user data temporarily
+user_data = {}
 
-# Initialize Telegram bot
-updater = Updater(token=TELEGRAM_BOT_TOKEN, use_context=True)
-dispatcher = updater.dispatcher
-logging.basicConfig(level=logging.DEBUG)
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Welcome! Are you interested in contributing? (yes/no)")
 
-# Command handler to start payment
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text('Welcome! Send /pay to initiate a payment.')
-
-# Handler to initiate payment
-def pay(update: Update, context: CallbackContext):
-    update.message.reply_text('Please provide your phone number (e.g., 2547XXXXXXXX) and the amount to pay in this format: phone_number,amount')
-    return
-
-# Message handler to receive phone number and amount
-def handle_payment(update: Update, context: CallbackContext):
-    user_input = update.message.text.split(',')
-    if len(user_input) != 2:
-        update.message.reply_text('Please provide the correct format: phone_number,amount')
-        return
-
-    phone_number = user_input[0].strip()
-    amount = user_input[1].strip()
-
-    # Make the payment request to your Flask server
-    response = requests.post(
-        'http://localhost:5000/pay',  # Or use the ngrok or production URL
-        json={'phone_number': phone_number, 'amount': amount}
-    )
-
-    if response.status_code == 200:
-        update.message.reply_text('Payment initiated! Please check your phone.')
+def handle_response(update: Update, context: CallbackContext) -> None:
+    user_response = update.message.text.lower()
+    
+    if user_response == "yes":
+        update.message.reply_text("Please enter the amount you wish to contribute:")
+        return  # Wait for user to provide an amount
+    elif user_response == "no":
+        update.message.reply_text("Thank you! If you change your mind, just type /start.")
     else:
-        update.message.reply_text('Something went wrong. Please try again.')
+        update.message.reply_text("Please respond with 'yes' or 'no'.")
 
-# Register the handlers
-dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(CommandHandler('pay', pay))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_payment))
+def handle_amount(update: Update, context: CallbackContext) -> None:
+    try:
+        amount = float(update.message.text)
+        user_phone = update.message.from_user.phone_number  # Assuming you've captured the user's phone number
+        response = send_stk_push(amount, user_phone)
 
-# Start webhook for production
-if __name__ == "__main__":
-    PORT = int(os.environ.get('PORT', 5000))
-    updater.start_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path='webhook',
-        webhook_url="https://hammtonndekebot.herokuapp.com/webhook"
-    )
+        # Check response and send appropriate message
+        if response.get('ResponseCode') == '0':
+            update.message.reply_text("STK Push request sent successfully! Please check your phone.")
+        else:
+            update.message.reply_text(f"Error: {response.get('ResponseDescription')}")
+    except ValueError:
+        update.message.reply_text("Please enter a valid amount.")
+
+def main() -> None:
+    updater = Updater("your_telegram_bot_token")  # Replace with your bot token
+    dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_response))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_amount))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()

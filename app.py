@@ -35,36 +35,41 @@ def pay():
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
-    
+
     if not data:
         logging.error("No data received from Telegram.")
         return "No data received", 400
-    
+
     if 'message' in data:
         chat_id = data['message']['chat']['id']
         text = data['message'].get('text', '')
-        
+
         if text == '/start':
             # Ask the user if they want to contribute
-            telegram_response = send_telegram_message(chat_id, "Are you interested in contributing? Reply 'yes' to proceed.")
-            logging.debug(f"Telegram Response for /start command: {telegram_response}")
+            telegram_response = send_telegram_message(chat_id, "Are you interested in contributing? (yes/no)")
+            logging.debug(f"Telegram Response: {telegram_response}")
+
             return jsonify({"telegram_response": telegram_response}), 200
-        
-        # Handle the user's response for contribution
+
+        # Handle the user's response (yes/no)
         elif text.lower() == 'yes':
             phone_number = "254792185625"  # Replace with a valid phone number for testing
             amount = 10000  # Set the amount you want to charge for testing
-            
+
             # Trigger STK Push
             response = initiate_stk_push(phone_number, amount)
             logging.debug(f"STK Push Response for 'yes' response: {response}")
-            
+
             telegram_response = send_telegram_message(chat_id, "Payment Initiated! Please check your phone to confirm.")
             logging.debug(f"Telegram Response: {telegram_response}")
-            
+
             return jsonify({"mpesa_response": response, "telegram_response": telegram_response}), 200
-    
+        elif text.lower() == 'no':
+            telegram_response = send_telegram_message(chat_id, "Thank you! Let me know if you change your mind.")
+            return jsonify({"telegram_response": telegram_response}), 200
+
     return "Webhook received", 200
+
 
 # Function to send a message back to the user on Telegram
 def send_telegram_message(chat_id, message):
