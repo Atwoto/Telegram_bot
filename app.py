@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from mpesa import initiate_stk_push  # Correct import based on the function name in mpesa.py
+from mpesa_integration import initiate_stk_push  # Correct import based on the function name in mpesa.py
 import os
 import requests
 import logging
