@@ -10,3 +10,5 @@ class MpesaConfig:
     AUTH_URL = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
     STK_PUSH_URL = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
     CALLBACK_URL = "https://hammtonndekebot.herokuapp.com/callback"  # Replace with your callback URL
+
+
